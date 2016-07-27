@@ -21,6 +21,74 @@ import rx.schedulers.Schedulers;
  */
 public class BasicTest {
 
+    /**
+     * Simple start
+     * @throws Exception
+     */
+    @Test
+    public void testBasic_SimplestUsage() throws Exception {
+
+        Func1<String, String> transform = new Func1<String, String>() {
+            @Override
+            public String call(String s) {
+                return new StringBuilder(s).reverse().toString();
+            }
+        };
+
+        Action1<String> doPrint = new Action1<String>() {
+            @Override
+            public void call(String s) {
+                System.out.println(s);
+            }
+        };
+
+        Observable.just("Hello world").subscribe(doPrint);
+        Observable.just("Hello world").map(transform).subscribe(doPrint);
+    }
+
+    /**
+     * Manually create Observable & Subscriber
+     */
+    @Test
+    public void testBasic_CoreUsage() throws InterruptedException {
+        final CountDownLatch latch = new CountDownLatch(1);
+
+        Observable<Integer> o = Observable.create(new Observable.OnSubscribe<Integer>() {
+            @Override
+            public void call(Subscriber<? super Integer> subscriber) {
+                subscriber.onNext(1);
+                subscriber.onNext(2);
+                subscriber.onNext(3);
+                subscriber.onCompleted();
+            }
+        });
+
+        o.doOnCompleted(new Action0() {
+            @Override
+            public void call() {
+                System.out.println("onCompleted");
+                latch.countDown();
+
+            }
+        }).doOnError(new Action1<Throwable>() {
+            @Override
+            public void call(Throwable throwable) {
+                System.out.println("onError");
+                latch.countDown();
+
+            }
+        }).subscribe(new Action1<Integer>() {
+            @Override
+            public void call(Integer integer) {
+                System.out.println("event: " + integer);
+
+            }
+        });
+
+        System.out.println("await");
+        latch.await(2000, TimeUnit.MILLISECONDS);
+    }
+
     @Test
     public void test1() throws Exception {
         Basic basic = new Basic();
@@ -450,42 +518,6 @@ public class BasicTest {
         });
 
         latch.await();
-    }
-
-    /**
-     * Manually create Observable & Subscriber
-     */
-    @Test
-    public void test9() throws InterruptedException {
-        final CountDownLatch latch = new CountDownLatch(1);
-
-        Observable<Integer> o = Observable.create(new Observable.OnSubscribe<Integer>() {
-            @Override
-            public void call(Subscriber<? super Integer> subscriber) {
-                subscriber.onNext(1);
-                subscriber.onNext(2);
-                subscriber.onNext(3);
-                subscriber.onCompleted();
-            }
-        });
-
-        o.doOnCompleted(new Action0() {
-            @Override
-            public void call() {
-                System.out.println("onCompleted");
-
-                latch.countDown();
-            }
-        })
-        .subscribe(new Action1<Integer>() {
-            @Override
-            public void call(Integer integer) {
-                System.out.println("event: " + integer);
-            }
-        });
-
-        System.out.println("await");
-        latch.await(2000, TimeUnit.MILLISECONDS);
     }
 
     @Test
